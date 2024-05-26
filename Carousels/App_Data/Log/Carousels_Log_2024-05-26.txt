@@ -1,0 +1,20 @@
+2024/5/26 下午 06:10:53, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]開始讀取
+2024/5/26 下午 06:10:53, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]讀取結束 -> 執行總共花費時間: 0.0079999秒
+2024/5/26 下午 06:11:23, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]開始讀取
+2024/5/26 下午 06:11:23, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]讀取結束 -> 執行總共花費時間: 0.0030006秒
+2024/5/26 下午 06:23:36, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]開始讀取
+2024/5/26 下午 06:23:36, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]讀取結束 -> 執行總共花費時間: 0.0020026秒
+2024/5/26 下午 06:25:36, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]開始讀取
+2024/5/26 下午 06:25:36, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]讀取結束 -> 執行總共花費時間: 0.0010013秒
+2024/5/26 下午 06:25:40, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]開始讀取
+2024/5/26 下午 06:25:40, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]讀取結束 -> 執行總共花費時間: 0.0009986秒
+2024/5/26 下午 06:25:43, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]開始讀取
+2024/5/26 下午 06:25:43, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]讀取結束 -> 執行總共花費時間: 0.001004秒
+2024/5/26 下午 06:25:44, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]開始讀取
+2024/5/26 下午 06:25:44, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]讀取結束 -> 執行總共花費時間: 0.0009985秒
+2024/5/26 下午 06:25:45, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]開始讀取
+2024/5/26 下午 06:25:45, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]讀取結束 -> 執行總共花費時間: 0.0020013秒
+2024/5/26 下午 06:25:46, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]開始讀取
+2024/5/26 下午 06:25:46, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]讀取結束 -> 執行總共花費時間: 0.0020126秒
+2024/5/26 下午 06:26:21, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]開始讀取
+2024/5/26 下午 06:26:21, [13-AS206][GetFilePath], ::1, [13-AS206][GetProgramme]讀取結束 -> 執行總共花費時間: 0.0009995秒

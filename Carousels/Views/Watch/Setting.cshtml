@@ -1,0 +1,898 @@
+﻿
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="ui_title">輪播管理</title>
+    <link rel="stylesheet" href="~/Assets/lib/bootstrap-5.3.2/css/bootstrap.min.css">
+    <script src="~/Assets/lib/bootstrap-5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="~/Assets/js/js.tableControl-0.4.9.js"></script>
+    <script src="~/Assets/js/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            background-color: rgb(43, 43, 43);
+        }
+        /*工具*/
+        svg {
+            fill: white;
+            padding: 10px;
+        }
+
+        .tool:hover {
+            cursor: pointer;
+            background-color: rgb(65, 84, 94);
+            border: 1px solid rgb(69, 123, 149);
+        }
+
+        #toolTipsMessage {
+            display: none;
+            position: absolute;
+            padding: 2.5px 5px;
+            background-color: rgb(88, 88, 88);
+            color: white;
+            border-radius: 10px;
+        }
+
+        .explorer {
+            width: 960px;
+            height: 75vh;
+            min-height: 720px;
+            background-color: rgb(13, 14, 15);
+            border: 1px solid black;
+        }
+
+        .explorer-tool-menu {
+            height: 8%;
+            background-color: black;
+        }
+
+        /* 隱藏滾輪圖示 */
+        #explorer-list::-webkit-scrollbar {
+            display: none;
+        }
+
+        #explorer-list {
+            padding: 1px;
+            background-color: rgb(40, 46, 52);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /*節目*/
+        .explorer-list-item {
+            cursor: pointer;
+            /*border: 1px solid white;*/
+            padding: 0 5px;
+            margin-bottom: 2px;
+        }
+
+        .explorer-list-item::after {
+            content: attr(data-name);
+        }
+
+        .explorer-list-item:hover {
+            background-color: rgb(81, 84, 88);
+            font-weight: bold;
+        }
+
+        .explorer-list-item[select] {
+            background-color: rgb(53, 107, 134);
+        }
+
+        /* 檔案 */
+        #explorer-main-data thead {
+            position: sticky;
+            top: 0;
+            background-color: white;
+        }
+
+        .file {
+            background-color: white;
+            padding: 10px 15px 5px 10px;
+        }
+
+        #explorer-main-data tbody tr:hover, #explorer-main-data tbody tr[select] {
+            border-color: rgb(184, 214, 251);
+            background-color: rgb(237, 244, 253);
+        }
+
+        .file::after {
+            content: attr(data-name);
+            color: #01977a;
+            font-weight: bold;
+        }
+        /* 畫面鎖定 */
+        #menuLock {
+            display: none;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+        /* 選單 */
+        .user-operate-menu {
+            display: none;
+            position: absolute;
+            padding: 5px 0;
+            font-weight: bold;
+            border: 1px solid rgb(53, 107, 134);
+            color: rgb(75, 200, 255);
+            background-color: rgb(4, 5, 6);
+        }
+
+        .user-operate-menu[active] {
+            display: block;
+        }
+
+        .user-operate-menu div {
+            padding: 5px 20px;
+        }
+
+        .user-operate-menu div:hover {
+            cursor: pointer;
+            background-color: rgb(17, 31, 37);
+        }
+    </style>
+</head>
+<body>
+    <!-- 工具功能用途提示用 -->
+    <div id="toolTipsMessage" class="z-3"></div>
+    <!-- UI 介面 -->
+    <div class="explorer d-flex flex-column justify-content-start m-auto text-light position-relative">
+        <!-- 鎖定視窗 -->
+        <div id="screen-lock" class="w-100 h-100 position-absolute top-0 z-3 d-none" style="background-color: black; opacity: 0.2;"></div>
+        <!-- 工具列 -->
+        <div class="explorer-tool-menu d-flex p-1 fs-3 text-center">
+            <svg id="tool_setting" class="tool d-none" data-th="節目設定" x="50px" y="50px" viewBox="0 0 1024 1024">
+                <g>
+                    <path d="M600.704 64a32 32 0 0 1 30.464 22.208l35.2 109.376c14.784 7.232 28.928 15.36 42.432 24.512l112.384-24.192a32 32 0 0 1 34.432 15.36L944.32 364.8a32 32 0 0 1-4.032 37.504l-77.12 85.12a357.12 357.12 0 0 1 0 49.024l77.12 85.248a32 32 0 0 1 4.032 37.504l-88.704 153.6a32 32 0 0 1-34.432 15.296L708.8 803.904c-13.44 9.088-27.648 17.28-42.368 24.512l-35.264 109.376A32 32 0 0 1 600.704 960H423.296a32 32 0 0 1-30.464-22.208L357.696 828.48a351.616 351.616 0 0 1-42.56-24.64l-112.32 24.256a32 32 0 0 1-34.432-15.36L79.68 659.2a32 32 0 0 1 4.032-37.504l77.12-85.248a357.12 357.12 0 0 1 0-48.896l-77.12-85.248A32 32 0 0 1 79.68 364.8l88.704-153.6a32 32 0 0 1 34.432-15.296l112.32 24.256c13.568-9.152 27.776-17.408 42.56-24.64l35.2-109.312A32 32 0 0 1 423.232 64H600.64zm-23.424 64H446.72l-36.352 113.088-24.512 11.968a294.113 294.113 0 0 0-34.816 20.096l-22.656 15.36-116.224-25.088-65.28 113.152 79.68 88.192-1.92 27.136a293.12 293.12 0 0 0 0 40.192l1.92 27.136-79.808 88.192 65.344 113.152 116.224-25.024 22.656 15.296a294.113 294.113 0 0 0 34.816 20.096l24.512 11.968L446.72 896h130.688l36.48-113.152 24.448-11.904a288.282 288.282 0 0 0 34.752-20.096l22.592-15.296 116.288 25.024 65.28-113.152-79.744-88.192 1.92-27.136a293.12 293.12 0 0 0 0-40.256l-1.92-27.136 79.808-88.128-65.344-113.152-116.288 24.96-22.592-15.232a287.616 287.616 0 0 0-34.752-20.096l-24.448-11.904L577.344 128zM512 320a192 192 0 1 1 0 384 192 192 0 0 1 0-384zm0 64a128 128 0 1 0 0 256 128 128 0 0 0 0-256z" />
+                </g>
+            </svg>
+            <svg id="tool_create" class="tool d-none" data-th="新增" x="50px" y="50px" viewBox="0 0 490.2 490.2">
+                <g>
+                    <path d="M418.5,418.5c95.6-95.6,95.6-251.2,0-346.8s-251.2-95.6-346.8,0s-95.6,251.2,0,346.8S322.9,514.1,418.5,418.5z M89,89 c86.1-86.1,226.1-86.1,312.2,0s86.1,226.1,0,312.2s-226.1,86.1-312.2,0S3,175.1,89,89z" />
+                    <path d="M245.1,336.9c3.4,0,6.4-1.4,8.7-3.6c2.2-2.2,3.6-5.3,3.6-8.7v-67.3h67.3c3.4,0,6.4-1.4,8.7-3.6c2.2-2.2,3.6-5.3,3.6-8.7 c0-6.8-5.5-12.3-12.2-12.2h-67.3v-67.3c0-6.8-5.5-12.3-12.2-12.2c-6.8,0-12.3,5.5-12.2,12.2v67.3h-67.3c-6.8,0-12.3,5.5-12.2,12.2 c0,6.8,5.5,12.3,12.2,12.2h67.3v67.3C232.8,331.4,238.3,336.9,245.1,336.9z" />
+                </g>
+            </svg>
+            <svg class="tool d-none" data-th="順序修改" x="50px" y="50px" viewBox="0 0 489.3 489.3">
+                <g>
+                    <path d="M119,468.85V50.05l73.6,73.6c2.4,2.4,5.5,3.6,8.7,3.6s6.3-1.2,8.7-3.6c4.8-4.8,4.8-12.5,0-17.3l-94.5-94.5 c-4.6-4.6-12.7-4.6-17.3,0l-94.6,94.5c-4.8,4.8-4.8,12.5,0,17.3c4.8,4.8,12.5,4.8,17.3,0l73.6-73.6v418.8 c0,6.8,5.5,12.3,12.3,12.3C113.5,481.05,119,475.55,119,468.85z" />
+                    <path d="M373.8,477.45c2.4,2.4,5.5,3.6,8.7,3.6s6.3-1.2,8.7-3.6l94.5-94.5c4.8-4.8,4.8-12.5,0-17.3s-12.5-4.8-17.3,0l-73.6,73.6 V20.45c0-6.8-5.5-12.3-12.3-12.3s-12.3,5.5-12.3,12.3v418.8l-73.5-73.6c-4.8-4.8-12.5-4.8-17.3,0s-4.8,12.5,0,17.3L373.8,477.45z" />
+                </g>
+            </svg>
+            <svg id="tool_update" class="tool d-none" data-th="編輯" x="50px" y="50px" viewBox="0 0 490.337 490.337">
+                <g>
+                    <path d="M229.9,145.379l-47.5,47.5c-17.5,17.5-35.1,35-52.5,52.7c-4.1,4.2-7.2,9.8-8.4,15.3c-6.3,28.9-12.4,57.8-18.5,86.7 l-3.4,16c-1.6,7.8,0.5,15.6,5.8,20.9c4.1,4.1,9.8,6.4,15.8,6.4c1.7,0,3.4-0.2,5.1-0.5l17.6-3.7c28-5.9,56.1-11.9,84.1-17.7 c6.5-1.4,12-4.3,16.7-9c78.6-78.7,157.2-157.3,235.8-235.8c5.8-5.8,9-12.7,9.8-21.2c0.1-1.4,0-2.8-0.3-4.1c-0.5-2-0.9-4.1-1.4-6.1 c-1.1-5.1-2.3-10.9-4.7-16.5l0,0c-14.7-33.6-39.1-57.6-72.5-71.1c-6.7-2.7-13.8-3.6-20-4.4l-1.7-0.2c-9-1.1-17.2,1.9-24.3,9.1 C320.4,54.879,275.1,100.179,229.9,145.379z M386.4,24.679c0.2,0,0.3,0,0.5,0l1.7,0.2c5.2,0.6,10,1.2,13.8,2.8 c27.2,11,47.2,30.6,59.3,58.2c1.4,3.2,2.3,7.3,3.2,11.6c0.3,1.6,0.7,3.2,1,4.8c-0.4,1.8-1.1,3-2.5,4.3 c-78.7,78.5-157.3,157.2-235.9,235.8c-1.3,1.3-2.5,1.9-4.3,2.3c-28.1,5.9-56.1,11.8-84.2,17.7l-14.8,3.1l2.8-13.1 c6.1-28.8,12.2-57.7,18.4-86.5c0.2-0.9,1-2.3,1.9-3.3c17.4-17.6,34.8-35.1,52.3-52.5l47.5-47.5c45.3-45.3,90.6-90.6,135.8-136 C384.8,24.979,385.7,24.679,386.4,24.679z" />
+                    <path d="M38.9,109.379h174.6c6.8,0,12.3-5.5,12.3-12.3s-5.5-12.3-12.3-12.3H38.9c-21.5,0-38.9,17.5-38.9,38.9v327.4 c0,21.5,17.5,38.9,38.9,38.9h327.3c21.5,0,38.9-17.5,38.9-38.9v-167.5c0-6.8-5.5-12.3-12.3-12.3s-12.3,5.5-12.3,12.3v167.5 c0,7.9-6.5,14.4-14.4,14.4H38.9c-7.9,0-14.4-6.5-14.4-14.4v-327.3C24.5,115.879,31,109.379,38.9,109.379z" />
+                </g>
+            </svg>
+            <svg class="tool d-none" data-th="儲存" x="50px" y="50px" viewBox="0 0 486 486">
+                <g>
+                    <path d="M473.7,485.75c6.8,0,12.3-5.5,12.3-12.3v-359.8c0-3.6-1.6-7-4.3-9.3L363,2.85c-0.2-0.2-0.4-0.3-0.6-0.4 c-0.3-0.2-0.5-0.4-0.8-0.6c-0.4-0.2-0.7-0.4-1.1-0.6c-0.3-0.1-0.6-0.3-0.9-0.4c-0.4-0.2-0.9-0.3-1.3-0.4c-0.3-0.1-0.6-0.2-0.9-0.2 c-0.8-0.1-1.5-0.2-2.3-0.2H12.3C5.5,0.05,0,5.55,0,12.35v461.3c0,6.8,5.5,12.3,12.3,12.3h461.4V485.75z M384.5,461.25h-283v-184.1 c0-3.7,3-6.6,6.6-6.6h269.8c3.7,0,6.6,3,6.6,6.6V461.25z M161.8,24.45h180.9v127.8c0,0.8-0.6,1.4-1.4,1.4h-178 c-0.8,0-1.4-0.7-1.4-1.4V24.45H161.8z M24.6,24.45h112.8v127.8c0,14.3,11.6,25.9,25.9,25.9h178c14.3,0,25.9-11.6,25.9-25.9V38.75 l94.2,80.6v341.9H409v-184.1c0-17.2-14-31.1-31.1-31.1H108.1c-17.2,0-31.1,14-31.1,31.1v184.2H24.6V24.45z" />
+                    <path d="M227.4,77.65h53.8v32.6c0,6.8,5.5,12.3,12.3,12.3s12.3-5.5,12.3-12.3v-44.8c0-6.8-5.5-12.3-12.3-12.3h-66.1 c-6.8,0-12.3,5.5-12.3,12.3S220.7,77.65,227.4,77.65z" />
+                    <path d="M304.5,322.85h-123c-6.8,0-12.3,5.5-12.3,12.3s5.5,12.3,12.3,12.3h123c6.8,0,12.3-5.5,12.3-12.3 S311.3,322.85,304.5,322.85z" />
+                    <path d="M304.5,387.75h-123c-6.8,0-12.3,5.5-12.3,12.3s5.5,12.3,12.3,12.3h123c6.8,0,12.3-5.5,12.3-12.3 S311.3,387.75,304.5,387.75z" />
+                </g>
+            </svg>
+            <svg id="tool_delete" class="tool d-none" data-th="刪除" x="50px" y="50px" viewBox="0 0 1024 1024">
+                <g>
+                    <path d="M160 256H96a32 32 0 0 1 0-64h256V95.936a32 32 0 0 1 32-32h256a32 32 0 0 1 32 32V192h256a32 32 0 1 1 0 64h-64v672a32 32 0 0 1-32 32H192a32 32 0 0 1-32-32V256zm448-64v-64H416v64h192zM224 896h576V256H224v640zm192-128a32 32 0 0 1-32-32V416a32 32 0 0 1 64 0v320a32 32 0 0 1-32 32zm192 0a32 32 0 0 1-32-32V416a32 32 0 0 1 64 0v320a32 32 0 0 1-32 32z" />
+                </g>
+            </svg>
+            <svg id="tool_file" class="tool" data-th="檔案管理" x="50px" y="50px" viewBox="0 0 489.95 489.95">
+                <g>
+                    <path d="M431.175,427.85v-200.5c0-34.2-27.9-62.1-62.1-62.1h-40.2c-6.8,0-12.3,5.5-12.3,12.3s5.5,12.3,12.3,12.3h40.2
+			            c20.7,0,37.6,16.9,37.6,37.6v200.6c0,20.7-16.9,37.6-37.6,37.6h-248.2c-20.7,0-37.6-16.9-37.6-37.6v-200.7
+			            c0-20.7,16.9-37.6,37.6-37.6h40.2c6.8,0,12.3-5.5,12.3-12.3s-5.5-12.3-12.3-12.3h-40.2c-34.2,0-62.1,27.9-62.1,62.1v200.6
+			            c0,34.2,27.9,62.1,62.1,62.1h248.2C403.375,489.95,431.175,462.15,431.175,427.85z" />
+                    <path d="M152.475,104.55c4.8,4.8,12.5,4.8,17.3,0l63-63v229.8c0,6.8,5.5,12.3,12.3,12.3c6.8,0,12.3-5.5,12.3-12.3V41.65l63,63
+			            c2.4,2.4,5.5,3.6,8.7,3.6s6.3-1.2,8.7-3.6c4.8-4.8,4.8-12.5,0-17.3l-83.9-83.9c-4.6-4.6-12.7-4.6-17.3,0l-83.9,83.9
+			            C147.675,92.05,147.675,99.75,152.475,104.55z" />
+                </g>
+            </svg>
+            <svg id="tool_player" class="tool" data-th="連線資訊" x="50px" y="50px" viewBox="0 0 490 490">
+                <g>
+                    <path d="M0.5,133.2V177c0,6.8,5.5,12.3,12.3,12.3S25,183.8,25,177v-43.8c0-39.4,32.1-71.5,71.5-71.5h61.9l-16.2,16.2
+			c-4.8,4.8-4.8,12.5,0,17.3c2.4,2.4,5.5,3.6,8.7,3.6s6.3-1.2,8.7-3.6l37.1-37.1c2.3-2.3,3.6-5.4,3.6-8.7c0-3.2-1.3-6.4-3.6-8.7
+			L159.6,3.6c-4.8-4.8-12.5-4.8-17.3,0s-4.8,12.5,0,17.3l16.2,16.2H96.6C43.6,37.2,0.5,80.3,0.5,133.2z" />
+                    <path d="M228,251.1H13.7c-6.8,0-12.3,5.5-12.3,12.3v214.3c0,6.8,5.5,12.3,12.3,12.3H228c6.8,0,12.3-5.5,12.3-12.3V263.3
+			C240.2,256.6,234.7,251.1,228,251.1z M215.7,465.4H26V275.6h189.8v189.8H215.7z" />
+                    <path d="M477.2,300.7c-6.8,0-12.3,5.5-12.3,12.3v43.8c0,39.4-32.1,71.5-71.5,71.5h-61.9l16.2-16.2c4.8-4.8,4.8-12.5,0-17.3
+			s-12.5-4.8-17.3,0l-37.1,37.1c-2.3,2.3-3.6,5.4-3.6,8.7s1.3,6.4,3.6,8.7l37.1,37.1c2.4,2.4,5.5,3.6,8.7,3.6s6.3-1.2,8.7-3.6
+			c4.8-4.8,4.8-12.5,0-17.3l-16.2-16.2h61.9c52.9,0,96-43.1,96-96V313C489.5,306.2,484,300.7,477.2,300.7z" />
+                    <path d="M476.3,0.1H262c-6.8,0-12.3,5.5-12.3,12.3v214.3c0,6.8,5.5,12.3,12.3,12.3h214.3c6.8,0,12.3-5.5,12.3-12.3V12.4
+			C488.5,5.6,483.1,0.1,476.3,0.1z M464,214.4H274.3V24.6H464V214.4z" />
+                </g>
+            </svg>
+        </div>
+        <!-- 資料列 -->
+        <div class="d-flex p-1" style="height: 92%;">
+            <!-- 左側資料夾 -->
+            <div id="explorer-list" class="fs-4 text-center overflow-scroll">
+                <div class="tool mb-5 d-none" data-th="新增資料夾">+</div>
+            </div>
+            <!-- 右側檔案 -->
+            <div id="explorer-main" class="ms-1 d-flex align-items-start flex-wrap w-75 ms-1 ps-3 pe-3 border bg-light text-dark overflow-auto">
+                <table id="explorer-main-data" class="text-nowrap w-100"></table>
+            </div>
+        </div>
+    </div>
+    <script>
+        // #region 工具功能用途提示
+        document.querySelectorAll('.tool').forEach(function (tool) {
+            tool.addEventListener('mouseover', function () {
+                var toolTipsMessage = document.getElementById('toolTipsMessage');
+                toolTipsMessage.innerText = this.getAttribute('data-th');
+                toolTipsMessage.style.display = 'block';
+            });
+            tool.addEventListener('mousemove', function (e) {
+                var toolTipsMessage = document.getElementById('toolTipsMessage');
+                toolTipsMessage.style.top = e.clientY + window.scrollY + 10 + 'px';
+                toolTipsMessage.style.left = e.clientX + 10 + 'px';
+            });
+            tool.addEventListener('mouseleave', function () {
+                var toolTipsMessage = document.getElementById('toolTipsMessage');
+                toolTipsMessage.innerText = '';
+                toolTipsMessage.style.display = 'none';
+            });
+        });
+
+        function activeFolderMenu(x, y) {
+            var menu = document.querySelectorAll('.user-operate-menu')[0];
+            menu.setAttribute('active', '');
+            menu.style.left = `${x}px`;
+            menu.style.top = `${y}px`;
+            menu.parentNode.style.display = 'block';
+        }
+        // #endregion 工具功能用途提示
+
+        var data_no = null;         // 左側資料夾的 key
+        var data_name = null;       // 左側資料夾的名稱
+        var data_url = null;        // 左側資料來源
+        var data_columns = null;    // 右側資料的欄位設定
+        var data_rowCallback = null;
+        var update_url = null;      // 修改API
+        var create_url = null;      // 新增API
+        var delete_url = null;      // 刪除API
+
+        // #region 左側選取時，右側產生資料
+        var explorerListItemSelect = null;
+        // 表格設定
+        var tableConn = TableClient.tableConnection(document.getElementById('explorer-main-data'));
+        tableConn.options.select = true;    // 排序
+        tableConn.options.sort = true;      // 單選
+
+        // 選取的顏色
+        function userSelectFolder(_folder) {
+            if (_folder !== explorerListItemSelect) {
+                if (explorerListItemSelect) {
+                    explorerListItemSelect.removeAttribute('select');
+                }
+                // 顯示節目清單
+                var _data = {};
+                if (data_no) {
+                    _data[data_no] = _folder.getAttribute('data-no');
+                }
+                loadDataList(_data);
+            }
+            _folder.setAttribute('select', '');
+            explorerListItemSelect = _folder;
+        }
+
+        // 點擊
+        document.getElementById('explorer-list').addEventListener('click', function (e) {
+            if (e.target.classList.contains('explorer-list-item')) {
+                userSelectFolder(e.target);
+            }
+        }, false);
+
+        // 載入資料
+        function loadDataList(_data) {
+            $.ajax({
+                'type': 'post',
+                'url': data_url,
+                'data': _data,
+                'dataType': 'json',
+                'success': function (data) {
+                    if (data.Result === 'true') {
+                        var data_list = JSON.parse(data.Data);
+                        tableConn.set({
+                            'columns': data_columns,
+                            'data': data_list,
+                            'rowCallback': data_rowCallback
+                        });
+                    }
+                },
+                'error': function (xhr, status, error) {
+
+                }
+            });
+        }
+        // #endregion 左側選取時，右側產生資料
+
+        // 載入檔案
+        function loadExplorer(url_values) {
+            var _url = null;
+            var _data = {};
+            // 網頁管理
+            if (url_values['ui'] == 'f') {
+                document.getElementById('ui_title').innerHTML = '檔案管理';
+                document.getElementById('tool_file').classList.add('d-none');
+                data_columns = [
+                    {
+                        'data': 'F_NO',
+                        'title': '檔案編號'
+                    },
+                    {
+                        'data': 'F_NAME',
+                        'title': '檔案名稱',
+                        'update': true,
+                        'create': true
+                    },
+                    {
+                        'data': 'F_TYPE',
+                        'title': '檔案類型'
+                    },
+                    {
+                        'data': 'F_PATH',
+                        'title': '檔案路徑',
+                        'update': true,
+                        'create': true
+                    },
+                    {
+                        'data': 'STAT',
+                        'title': '狀態',
+                        'update': true
+                    },
+                    {
+                        'data': 'UpdateTime',
+                        'title': '最後異動時間'
+                    }
+                ];
+                data_url = '@Url.Action("GetProgramme_DATA", "Api")';
+                update_url = '@Url.Action("UpdateProgramme_DATA", "Api")';
+                create_url = '@Url.Action("CreateProgramme_DATA", "Api")';
+            }
+            else
+            if (url_values['ui'] == 'link') {
+                document.getElementById('ui_title').innerHTML = '連線資訊';
+                document.getElementById('tool_player').classList.add('d-none');
+                data_columns = [
+                    {
+                        'data': 'C_NO',
+                        'title': '播放器編號'
+                    },
+                    {
+                        'data': 'C_NAME',
+                        'title': '播放器名稱'
+                    },
+                    {
+                        'data': 'STAT',
+                        'title': '播放器狀態'
+                    },
+                    {
+                        'data': 'LINK_STAT',
+                        'title': '連線狀態'
+                    }
+                ];
+                data_url = '@Url.Action("GetLinkInfo", "Api")';
+                data_rowCallback = function (row, field, index) {
+                    field[3].target.innerHTML = '';
+                    var div = field[3].target.appendChild(document.createElement('div'));
+                    div.setAttribute('class', 'rounded-circle');
+                    div.setAttribute('style', 'width: 25px; height: 25px;');
+                    // 連線狀況
+                    if (field[3].data == 0) {
+                        div.classList.add('bg-danger');
+                    }
+                    else {
+                        div.classList.add('bg-success');
+                    }
+                };
+            }
+            // 節目內容
+            else
+            if (url_values['C_NO']) {
+                document.getElementById('ui_title').innerHTML = '節目內容';
+                _url = '@Url.Action("GetProgramme", "Api")';
+                _data['C_NO'] = url_values['C_NO'];
+                data_no = 'P_NO';
+                data_name = 'P_NAME';
+                data_columns = [
+                    {
+                        'data': 'ITEM',
+                        'title': '排序',
+                        'update': true,
+                        'create': true
+                    },
+                    {
+                        'data': 'F_NO',
+                        'title': '檔案編號',
+                        'update': true,
+                        'create': true
+                    },
+                    {
+                        'data': 'F_NAME',
+                        'title': '檔案名稱'
+                    },
+                    {
+                        'data': 'F_TYPE',
+                        'title': '檔案類型'
+                    },
+                    {
+                        'data': 'PY_SECOND',
+                        'title': '播放秒數',
+                        'update': true,
+                        'create': true
+                    },
+                    {
+                        'data': 'STAT',
+                        'title': '播放狀態',
+                        'update': true
+                    },
+                    {
+                        'data': 'F_STAT',
+                        'title': '檔案狀態'
+                    }
+                ];
+                data_url = '@Url.Action("GetProgramme_LIST", "Api")';
+                update_url = '@Url.Action("UpdateProgramme_LIST", "Api")';
+                create_url = '@Url.Action("CreateProgramme_LIST", "Api")';
+                delete_url = '@Url.Action("DeleteProgramme_LIST", "Api")';
+            }
+            // 節目清單
+            else {
+                document.getElementById('ui_title').innerHTML = '節目清單';
+                _url = '@Url.Action("GetPlayer", "Api")';
+                data_no = 'C_NO';
+                data_name = 'C_NAME';
+                data_columns = [
+                    {
+                        'data': 'ITEM',
+                        'title': '順序',
+                        'update': true
+                    },
+                    {
+                        'data': 'P_NO',
+                        'title': '節目編號'
+                    },
+                    {
+                        'data': 'P_NAME',
+                        'title': '節目名稱'
+                    },
+                    {
+                        'data': 'STAT',
+                        'title': '狀態'
+                    }
+                ];
+
+                data_url = '@Url.Action("GetProgramme", "Api")';
+                update_url = '@Url.Action("UpdatePLAYER_LIST", "Api")';
+                document.getElementById('tool_setting').classList.remove('d-none');
+            };
+
+            if (_url) {
+                $.ajax({
+                    'type': 'post',
+                    'url': _url,
+                    'data': _data,
+                    'dataType': 'json',
+                    'success': function (data) {
+                        if (data.Result === 'true') {
+                            var player = JSON.parse(data.Data);
+
+                            player.forEach(function (p) {
+                                var plus = document.querySelector('#explorer-list div:last-child');
+                                var div = document.createElement('div');
+                                div.setAttribute('class', 'explorer-list-item text-nowrap text-start'); //  text-truncate 超出變...
+                                div.setAttribute('data-name', p[data_name]);
+                                div.setAttribute('data-no', p[data_no]);
+                                plus.parentNode.insertBefore(div, plus);
+                            });
+                        }
+                    },
+                    'error': function (xhr, status, error) { }
+                });
+            }
+            else {
+                document.getElementById('explorer-list').classList.add('d-none');
+                document.getElementById('explorer-main').classList.add('w-100');
+                loadDataList();
+            }
+
+            if (update_url) {
+                document.getElementById('tool_update').classList.remove('d-none');
+            }
+            if (create_url) {
+                document.getElementById('tool_create').classList.remove('d-none');
+            }
+            if (delete_url) {
+                document.getElementById('tool_delete').classList.remove('d-none');
+            }
+        }
+
+        // 取得左側資料夾的 key
+        function get_data_no() {
+            var data_no = null;
+            var select = document.getElementById('explorer-list').querySelector('div[select]');
+            if (select) {
+                data_no = select.getAttribute('data-no');
+            }
+            return data_no;
+        }
+
+        // 取得網頁參數
+        function getURLValue() {
+            var data = {};
+            var value = decodeURI(window.location.search).slice(1);
+            if (value) {
+                value.split('&').forEach(function (v) {
+                    var d = v.split('=');
+                    data[d[0]] = d[1];
+                });
+            }
+            return data;
+        }
+
+        // 讀取
+        loadExplorer(getURLValue());
+
+    </script>
+
+
+    <style>
+        #update-menu, #create-menu {
+            width: 600px;
+            height: 600px;
+            margin-left: 30vw;
+            margin-top: 5vh;
+            top: 0;
+            position: absolute;
+            font-weight: bold;
+            border: 1px solid rgb(53, 107, 134);
+            color: rgb(75, 200, 255);
+            background-color: rgb(4, 5, 6);
+        }
+
+        .update-menu-list, .create-menu-list {
+            width: 100%;
+        }
+
+        #update-menu-list-cancel, #update-menu-list-save, #create-menu-list-cancel, #create-menu-list-save {
+            cursor: pointer;
+        }
+    </style>
+    <!-- 編輯介面 -->
+    <div id="update-menu" class="p-3 d-none z-3 text-nowrap">
+        <div style="height: 95%;" class="p-1 w-100 overflow-x-auto">
+            <table class="update-menu-list">
+                <tbody id="update-menu-list-data"></tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-end" style="height: 5%;">
+            <div id="update-menu-list-cancel">取消</div>
+            <div id="update-menu-list-save" class="ms-3">存檔</div>
+        </div>
+    </div>
+    <!-- 新增介面 -->
+    <div id="create-menu" class="p-3 d-none z-3 text-nowrap">
+        <div style="height: 95%;" class="p-1 w-100 overflow-x-auto">
+            <table class="create-menu-list">
+                <tbody id="create-menu-list-data"></tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-end" style="height: 5%;">
+            <div id="create-menu-list-cancel">取消</div>
+            <div id="create-menu-list-save" class="ms-3">存檔</div>
+        </div>
+    </div>
+    <script>
+        // 畫面鎖定
+        function screen_lock() {
+            document.getElementById('screen-lock').classList.remove('d-none');
+        }
+        // 畫面解鎖
+        function screen_unlock() {
+            document.getElementById('screen-lock').classList.add('d-none');
+        }
+
+        // 開啟修改介面
+        function update_menu_show() {
+            document.getElementById('update-menu').classList.remove('d-none');
+            screen_lock();
+        }
+        // 關閉修改介面
+        function update_menu_unshow() {
+            document.getElementById('update-menu').classList.add('d-none');
+            screen_unlock();
+            document.getElementById('update-menu-list-data').innerHTML = '';
+        }
+
+        // 開啟新增介面
+        function create_menu_show() {
+            document.getElementById('create-menu').classList.remove('d-none');
+            screen_lock();
+        }
+        // 關閉新增介面
+        function create_menu_unshow() {
+            document.getElementById('create-menu').classList.add('d-none');
+            screen_unlock();
+            document.getElementById('create-menu-list-data').innerHTML = '';
+        }
+
+        // 建立檔案的下拉選單(新增/修改介面用)
+        function getProgramme_DATA_select_element(F_NO) {
+            var select = document.createElement('select');
+
+            $.ajax({
+                'type': 'post',
+                'url': '@Url.Action("GetProgramme_DATA", "Api")',
+                'dataType': 'json',
+                'success': function (data) {
+                    if (data.Result === 'true') {
+                        JSON.parse(data.Data).forEach(function (p) {
+                            var option = select.appendChild(document.createElement('option'));
+                            option.value = p['F_NO'];
+                            option.innerHTML = p['F_NAME'];
+                        });
+                        if (F_NO) {
+                            select.value = F_NO;
+                        }
+                    }
+                },
+                'error': function (xhr, status, error) { }
+            });
+
+            return select;
+        }
+
+        // 建立資料列(新增/修改介面用)
+        function getData_list(column, data) {
+            var tr = document.createElement('tr');
+            var colname = tr.appendChild(document.createElement('td'));
+            var value = tr.appendChild(document.createElement('td'));
+
+            if (column['data'] == 'F_NO') {
+                value = value.appendChild(getProgramme_DATA_select_element(data));
+            }
+            else {
+                value = value.appendChild(document.createElement('input'));
+                value.setAttribute('type', 'text');
+                if (data) {
+                    value.value = data;
+                }
+            }
+
+            // 標題
+            colname.innerHTML = column['title'];
+            // 內容
+            value.setAttribute('data-colname', column['data']);
+            value.classList.add('data-value');
+            value.classList.add('w-100');
+
+            return tr;
+        }
+
+        // 重整資料
+        function reflash_data_list() {
+            var _data = {};
+            if (data_no) {
+                _data[data_no] = get_data_no();
+            }
+            loadDataList(_data);
+        }
+
+        // 送出修改
+        function update_save(_data, change_data) {
+            if (update_url) {
+                var ck = 0;
+                _data['F_NO_key'] = _data['F_NO'];
+                Object.keys(change_data).forEach(function (key) {
+                    if (_data[key] != change_data[key]) {
+                        // 交換
+                        var tmp = _data[key];
+                        _data[key] = change_data[key];
+                        change_data[key] = tmp;
+                        // 有異動
+                        if (!ck) {
+                            ck = 1;
+                        }
+                    }
+                });
+                if (ck) {
+                    $.ajax({
+                        'type': 'post',
+                        'url': update_url,
+                        'data': _data,
+                        'dataType': 'json',
+                        'success': function (data) {
+                            if (data.Result == 'true') {
+                                confirm(data.Data);
+                                reflash_data_list();
+                                //tableConn.reflash();
+                            }
+                            else {
+                                confirm(data.ErrorMessage);
+                                // 還原
+                                Object.keys(change_data).forEach(function (key) {
+                                    var tmp = _data[key];
+                                    _data[key] = change_data[key];
+                                    change_data[key] = tmp;
+                                });
+                            }
+                        },
+                        'error': function (xhr, status, error) { }
+                    });
+                }
+                else {
+                    confirm('無異動');
+                }
+            }
+        }
+
+        // 送出新增
+        function create_save(new_data) {
+            if (create_url) {
+                $.ajax({
+                    'type': 'post',
+                    'url': create_url,
+                    'data': new_data,
+                    'dataType': 'json',
+                    'success': function (data) {
+                        if (data.Result == 'true') {
+                            confirm(data.Data);
+                            reflash_data_list();
+                        }
+                        else {
+                            confirm(data.ErrorMessage);
+                        }
+                    },
+                    'error': function (xhr, status, error) { }
+                });
+            }
+        }
+
+        // 送出刪除
+        function delete_save(_data) {
+            if (delete_url) {
+                $.ajax({
+                    'type': 'post',
+                    'url': delete_url,
+                    'data': _data,
+                    'dataType': 'json',
+                    'success': function (data) {
+                        if (data.Result == 'true') {
+                            confirm(data.Data);
+                            reflash_data_list();
+                        }
+                        else {
+                            confirm(data.ErrorMessage);
+                        }
+                    },
+                    'error': function (xhr, status, error) { }
+                });
+            }
+        }
+
+        // 節目設定
+        document.getElementById('tool_setting').addEventListener('click', function (e) {
+            var C_NO = get_data_no();
+            if (C_NO) {
+                window.open('@Url.Action("Setting", "Watch")' + '?C_NO=' + C_NO);
+            }
+        });
+
+        // 檔案編輯/上傳
+        document.getElementById('tool_file').addEventListener('click', function (e) {
+            window.open('@Url.Action("Setting", "Watch")' + '?ui=f');
+        });
+        // 連線資訊
+        document.getElementById('tool_player').addEventListener('click', function (e) {
+            window.open('@Url.Action("Setting", "Watch")' + '?ui=link');
+        });
+
+        // #region 編輯
+        document.getElementById('tool_update').addEventListener('click', function (e) {
+            if (tableConn.select && tableConn.select.Row && tableConn.select.Row.data) {
+                if (tableConn.select.Row.data['F_PATH'] && tableConn.select.Row.data['F_TYPE'] == 'Folder') {
+                    confirm('資料夾禁止編輯');
+                    return;
+                }
+                update_menu_show();
+                var update_menu_list_data = document.getElementById('update-menu-list-data');
+                data_columns.forEach(function (column) {
+                    // 可編輯
+                    if (column['update']) {
+                        update_menu_list_data.appendChild(getData_list(column, tableConn.select.Row.data[column['data']]));
+                    }
+                });
+            }
+        });
+        // 取消
+        document.getElementById('update-menu-list-cancel').addEventListener('click', function (e) {
+            update_menu_unshow();
+        });
+        // 存檔
+        document.getElementById('update-menu-list-save').addEventListener('click', function (e) {
+            if (tableConn.select && tableConn.select.Row && tableConn.select.Row.data) {
+                var save_data = {};
+                document.getElementById('update-menu-list-data').querySelectorAll('.data-value').forEach(function (data_value) {
+                    var colname = data_value.getAttribute('data-colname');
+                    var value = data_value.value;
+                    // 去除換行
+                    if (value) {
+                        value = value.replaceAll(/\r\n|\n/g, '');
+                    }
+                    // 特殊處理， '' 轉 NULL
+                    if (colname == 'STAT' || colname == 'F_STAT') {
+                        if (value == '') {
+                            value = null;
+                        }
+                    }
+                    save_data[colname] = value;
+                });
+                update_save(tableConn.select.Row.data, save_data);
+            }
+            update_menu_unshow();
+        });
+        // #endregion 編輯
+
+        // #region 新增
+        document.getElementById('tool_create').addEventListener('click', function (e) {
+            if (!data_no || get_data_no()) {
+                create_menu_show();
+                var create_menu_list_data = document.getElementById('create-menu-list-data');
+                data_columns.forEach(function (column) {
+                    // 可新增
+                    if (column['create']) {
+                        create_menu_list_data.appendChild(getData_list(column));
+                    }
+                });
+            }
+        });
+        // 取消
+        document.getElementById('create-menu-list-cancel').addEventListener('click', function (e) {
+            create_menu_unshow();
+        });
+        // 存檔
+        document.getElementById('create-menu-list-save').addEventListener('click', function (e) {
+            var create_data = {};
+            document.getElementById('create-menu-list-data').querySelectorAll('.data-value').forEach(function (data_value) {
+                var colname = data_value.getAttribute('data-colname');
+                var value = data_value.value;
+                // 去除換行
+                if (value) {
+                    value = value.replaceAll(/\r\n|\n/g, '');
+                }
+                create_data[colname] = value;
+            });
+            if (data_no == 'P_NO') {
+                create_data['P_NO'] = get_data_no();
+            }
+            create_save(create_data);
+            create_menu_unshow();
+        });
+        // #endregion 新增
+
+        // #region 刪除
+        document.getElementById('tool_delete').addEventListener('click', function (e) {
+            if (tableConn.select && tableConn.select.Row && tableConn.select.Row.data) {
+                if (confirm('確定刪除')) {
+                    screen_lock();
+                    delete_save(tableConn.select.Row.data);
+                    screen_unlock();
+                }
+            }
+        });
+        // #endregion 刪除
+    </script>
+</body>
+</html>
+

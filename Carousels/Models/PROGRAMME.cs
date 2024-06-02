@@ -1,12 +1,10 @@
 ﻿
 namespace Carousels.Models
 {
-    public class PLAYER_LIST
+    public class PROGRAMME
     {
-        public string C_NO { get; set; }
-        public int ITEM { get; set; }
         public string P_NO { get; set; }
+        public string P_NAME { get; set; }
         public string STAT { get; set; }
-
     }
 }

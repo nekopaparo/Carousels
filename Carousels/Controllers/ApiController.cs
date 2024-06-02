@@ -1,6 +1,5 @@
 ﻿using Carousels.App_Code;
 using Carousels.Models;
-using Microsoft.SqlServer.Server;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -76,12 +75,12 @@ namespace Carousels.Controllers
 
                     DateTime StartTime = DateTime.Now;
 
-                    Log.WriteLine(string.Format("[{0}][{1}]開始讀取", C_NO, "GetProgramme"));
+                    Log.WriteLine(string.Format("[{0}][{1}]開始讀取", C_NO, "GetPLAYER_LIST"));
 
                     // 讀取節目表
                     core.GetProgramme(Log, FS, C_NO);
 
-                    Log.WriteLine(string.Format("[{0}][{1}]讀取結束 -> 執行總共花費時間: {2}秒", C_NO, "GetProgramme", (DateTime.Now - StartTime).TotalSeconds));
+                    Log.WriteLine(string.Format("[{0}][{1}]讀取結束 -> 執行總共花費時間: {2}秒", C_NO, "GetPLAYER_LIST", (DateTime.Now - StartTime).TotalSeconds));
 
                     ajaxResult.Result = "true";
                     ajaxResult.Data = Newtonsoft.Json.JsonConvert.SerializeObject(FS);
@@ -151,8 +150,6 @@ ORDER BY C_NAME
             return Json(ajaxResult);
         }
 
-
-
         /// <summary>
         /// 取得播放器
         /// </summary>
@@ -187,10 +184,10 @@ ORDER BY C_NAME
         }
 
         /// <summary>
-        /// 取得節目表
+        /// 取得節目
         /// </summary>
         [HttpPost]
-        public JsonResult GetProgramme(string C_NO)
+        public JsonResult GetProgramme()
         {
             AJAXResponse ajaxResult = new AJAXResponse();
             try
@@ -198,7 +195,129 @@ ORDER BY C_NAME
                 using (CarouselDbConnection db = new CarouselDbConnection())
                 {
                     using (SQLiteCommand cmd = db.GetCommand(@"
-SELECT A.C_NO, A.C_NAME, C.P_NO, C.P_NAME, CAST(B.ITEM as nvarchar) [ITEM], C.STAT
+SELECT P_NO, P_NAME, STAT
+,STRFTIME('%Y-%m-%d %H:%M:%S', UpdateTime) UpdateTime
+FROM PROGRAMME
+ORDER BY P_NAME
+                    "))
+                    {
+                        DataTable dt = new DataTable();
+                        dt.Load(cmd.ExecuteReader());
+                        ajaxResult.Data = Newtonsoft.Json.JsonConvert.SerializeObject(dt);
+                        ajaxResult.Result = "true";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ajaxResult.ErrorMessage = ex.Message;
+            }
+
+            return Json(ajaxResult);
+        }
+
+        /// <summary>
+        /// 修改節目
+        /// </summary>
+        [HttpPost]
+        public JsonResult UpdateProgramme(PROGRAMME data)
+        {
+            AJAXResponse ajaxResult = new AJAXResponse();
+            try
+            {
+                using (CarouselDbConnection db = new CarouselDbConnection())
+                {
+                    using (SQLiteCommand cmd = db.GetCommand(@"
+UPDATE PROGRAMME
+SET P_NAME = @P_NAME, STAT = @STAT, UpdateTime = @UpdateTime
+WHERE P_NO = @P_NO
+                    "))
+                    {
+                        cmd.Parameters.AddWithValue("@P_NO", data.P_NO);
+                        cmd.Parameters.AddWithValue("@P_NAME", data.P_NAME);
+                        if (string.IsNullOrEmpty(data.STAT))
+                        {
+                            cmd.Parameters.AddWithValue("@STAT", DBNull.Value);
+                        }
+                        else
+                        {
+                            cmd.Parameters.AddWithValue("@STAT", data.STAT);
+                        }
+                        cmd.Parameters.AddWithValue("@UpdateTime", DateTime.Now);
+
+                        ajaxResult.Data = String.Format("受影響行數: {0}", cmd.ExecuteNonQuery());
+                        ajaxResult.Result = "true";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ajaxResult.ErrorMessage = ex.Message;
+            }
+
+            return Json(ajaxResult);
+        }
+
+        /// <summary>
+        /// 新增節目
+        /// </summary>
+        [HttpPost]
+        public JsonResult CreateProgramme(PROGRAMME data)
+        {
+            AJAXResponse ajaxResult = new AJAXResponse();
+            try
+            {
+
+                using (CarouselDbConnection db = new CarouselDbConnection())
+                {
+                    using (SQLiteCommand cmd = db.GetCommand(@"
+SELECT SUBSTRING(MAX(P_NO), 2)
+FROM PROGRAMME
+                    "))
+                    {
+                        int id = ToInt(cmd.ExecuteScalar().ToString());
+                        id += 1;
+
+                        cmd.CommandText = @"
+INSERT INTO PROGRAMME
+(P_NO, P_NAME, STAT, UpdateTime)
+VALUES
+(@P_NO, @P_NAME, NULL, @UpdateTime)
+                        ";
+
+                        cmd.Parameters.AddWithValue("@P_NO", "P" + ToHexadecimal(id, 8));
+                        cmd.Parameters.AddWithValue("@P_NAME", data.P_NAME);
+                        cmd.Parameters.AddWithValue("@UpdateTime", DateTime.Now);
+
+                        ajaxResult.Data = String.Format("受影響行數: {0}", cmd.ExecuteNonQuery());
+                        ajaxResult.Result = "true";
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                ajaxResult.ErrorMessage = ex.Message;
+            }
+
+            return Json(ajaxResult);
+        }
+
+        /// <summary>
+        /// 取得節目表
+        /// </summary>
+        [HttpPost]
+        public JsonResult GetPLAYER_LIST(string C_NO)
+        {
+            AJAXResponse ajaxResult = new AJAXResponse();
+            try
+            {
+                using (CarouselDbConnection db = new CarouselDbConnection())
+                {
+                    using (SQLiteCommand cmd = db.GetCommand(@"
+SELECT A.C_NO, A.C_NAME, C.P_NO, C.P_NAME, CAST(B.ITEM AS nvarchar) [ITEM]
+,B.STAT, C.STAT [P_STAT]
+,STRFTIME('%Y-%m-%d %H:%M:%S', B.UpdateTime) UpdateTime
 FROM PLAYER A
 LEFT JOIN PLAYER_LIST B ON B.C_NO = A.C_NO
 LEFT JOIN PROGRAMME C ON C.P_NO = B.P_NO
@@ -235,13 +354,22 @@ ORDER BY A.C_NO, B.ITEM
                 {
                     using (SQLiteCommand cmd = db.GetCommand(@"
 UPDATE PLAYER_LIST 
-SET ITEM = @ITEM
+SET ITEM = @ITEM, STAT = @STAT, UpdateTime = @UpdateTime
 WHERE C_NO = @C_NO AND P_NO = @P_NO
                     "))
                     {
                         cmd.Parameters.AddWithValue("@C_NO", data.C_NO);
                         cmd.Parameters.AddWithValue("@ITEM", data.ITEM);
                         cmd.Parameters.AddWithValue("@P_NO", data.P_NO);
+                        if (string.IsNullOrEmpty(data.STAT))
+                        {
+                            cmd.Parameters.AddWithValue("@STAT", DBNull.Value);
+                        }
+                        else
+                        {
+                            cmd.Parameters.AddWithValue("@STAT", data.STAT);
+                        }
+                        cmd.Parameters.AddWithValue("@UpdateTime", DateTime.Now);
 
                         ajaxResult.Data = String.Format("受影響行數: {0}", cmd.ExecuteNonQuery());
                         ajaxResult.Result = "true";
@@ -256,12 +384,11 @@ WHERE C_NO = @C_NO AND P_NO = @P_NO
             return Json(ajaxResult);
         }
 
-
         /// <summary>
-        /// 取得節目內容
+        /// 修改播放清單
         /// </summary>
         [HttpPost]
-        public JsonResult GetProgramme_LIST(string P_NO)
+        public JsonResult CreatePLAYER_LIST(PLAYER_LIST data)
         {
             AJAXResponse ajaxResult = new AJAXResponse();
             try
@@ -269,16 +396,108 @@ WHERE C_NO = @C_NO AND P_NO = @P_NO
                 using (CarouselDbConnection db = new CarouselDbConnection())
                 {
                     using (SQLiteCommand cmd = db.GetCommand(@"
-SELECT A.P_NO, CAST(B.ITEM as nvarchar) [ITEM], B.F_NO, C.F_NAME, C.F_TYPE
-,CAST(B.PY_SECOND as nvarchar) [PY_SECOND], B.STAT, C.STAT [F_STAT]
-FROM PROGRAMME A
-LEFT JOIN PROGRAMME_LIST B ON B.P_NO = A.P_NO
-LEFT JOIN PROGRAMME_DATA C ON C.F_NO = B.F_NO
-WHERE A.P_NO = @P_NO
-ORDER BY A.P_NO, B.ITEM
+SELECT COUNT(*)
+FROM PLAYER_LIST
+WHERE C_NO = @C_NO AND P_NO = @P_NO
                     "))
                     {
-                        cmd.Parameters.AddWithValue("@P_NO", P_NO);
+                        cmd.Parameters.AddWithValue("@C_NO", data.C_NO);
+                        cmd.Parameters.AddWithValue("@P_NO", data.P_NO);
+
+                        int count = int.Parse(cmd.ExecuteScalar().ToString());
+
+                        if (count > 0)
+                        {
+                            throw new Exception("重複新增，已終止操作");
+                        }
+
+                        cmd.CommandText = @"
+INSERT INTO PLAYER_LIST
+(C_NO, ITEM, P_NO, STAT, UpdateTime)
+VALUES
+(@C_NO, @ITEM, @P_NO, NULL, @UpdateTime)
+                        ";
+
+                        cmd.Parameters.AddWithValue("@ITEM", data.ITEM);
+                        cmd.Parameters.AddWithValue("@UpdateTime", DateTime.Now);
+
+                        ajaxResult.Data = String.Format("受影響行數: {0}", cmd.ExecuteNonQuery());
+                        ajaxResult.Result = "true";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ajaxResult.ErrorMessage = ex.Message;
+            }
+
+            return Json(ajaxResult);
+        }
+
+        /// <summary>
+        /// 刪除播放清單
+        /// </summary>
+        [HttpPost]
+        public JsonResult DeletePLAYER_LIST(PLAYER_LIST data)
+        {
+            AJAXResponse ajaxResult = new AJAXResponse();
+            try
+            {
+                using (CarouselDbConnection db = new CarouselDbConnection())
+                {
+                    using (SQLiteCommand cmd = db.GetCommand(@"
+SELECT COUNT(*)
+FROM PLAYER_LIST
+WHERE C_NO = @C_NO AND P_NO = @P_NO
+                    "))
+                    {
+                        cmd.Parameters.AddWithValue("@C_NO", data.C_NO);
+                        cmd.Parameters.AddWithValue("@P_NO", data.P_NO);
+
+                        int count = int.Parse(cmd.ExecuteScalar().ToString());
+
+                        if (count > 1)
+                        {
+                            throw new Exception("刪除數超過1筆，資料異常");
+                        }
+
+                        cmd.CommandText = @"
+DELETE
+FROM PLAYER_LIST
+WHERE C_NO = @C_NO AND P_NO = @P_NO
+                        ";
+
+                        ajaxResult.Data = String.Format("受影響行數: {0}", cmd.ExecuteNonQuery());
+                        ajaxResult.Result = "true";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ajaxResult.ErrorMessage = ex.Message;
+            }
+
+            return Json(ajaxResult);
+        }
+
+        [HttpPost]
+        public JsonResult GetProgramme_LIST(PROGRAMME_LIST data)
+        {
+            AJAXResponse ajaxResult = new AJAXResponse();
+            try
+            {
+                using (CarouselDbConnection db = new CarouselDbConnection())
+                {
+                    using (SQLiteCommand cmd = db.GetCommand(@"
+SELECT A.P_NO, CAST(A.ITEM AS nvarchar) [ITEM], A.F_NO, B.F_NAME, A.PY_SECOND, B.STAT [F_STAT], A.STAT
+,STRFTIME('%Y-%m-%d %H:%M:%S', A.UpdateTime) UpdateTime
+FROM PROGRAMME_LIST A
+LEFT JOIN PROGRAMME_DATA B ON B.F_NO = A.F_NO
+WHERE A.P_NO = @P_NO
+ORDER BY A.ITEM
+                    "))
+                    {
+                        cmd.Parameters.AddWithValue("@P_NO", data.P_NO);
                         DataTable dt = new DataTable();
                         dt.Load(cmd.ExecuteReader());
                         ajaxResult.Data = Newtonsoft.Json.JsonConvert.SerializeObject(dt);
@@ -340,7 +559,7 @@ WHERE P_NO = @P_NO AND F_NO = @F_NO
 
                         cmd.CommandText = @"
 UPDATE PROGRAMME_LIST
-SET ITEM = @ITEM, F_NO = @F_NO, PY_SECOND = @PY_SECOND, STAT = @STAT
+SET ITEM = @ITEM, F_NO = @F_NO, PY_SECOND = @PY_SECOND, STAT = @STAT, UpdateTime = @UpdateTime
 WHERE P_NO = @P_NO AND F_NO = @F_NO_key
                         ";
 
@@ -354,6 +573,7 @@ WHERE P_NO = @P_NO AND F_NO = @F_NO_key
                         {
                             cmd.Parameters.AddWithValue("@STAT", data.STAT);
                         }
+                        cmd.Parameters.AddWithValue("@UpdateTime", DateTime.Now);
 
                         ajaxResult.Data = String.Format("受影響行數: {0}", cmd.ExecuteNonQuery());
                         ajaxResult.Result = "true";
@@ -397,13 +617,14 @@ WHERE P_NO = @P_NO AND F_NO = @F_NO
 
                         cmd.CommandText = @"
 INSERT INTO PROGRAMME_LIST
-(P_NO, ITEM, F_NO, PY_SECOND, STAT)
+(P_NO, ITEM, F_NO, PY_SECOND, STAT, UpdateTime)
 VALUES
-(@P_NO, @ITEM, @F_NO, @PY_SECOND, NULL)
+(@P_NO, @ITEM, @F_NO, @PY_SECOND, NULL, @UpdateTime)
                         ";
 
                         cmd.Parameters.AddWithValue("@ITEM", data.ITEM);
                         cmd.Parameters.AddWithValue("@PY_SECOND", data.PY_SECOND);
+                        cmd.Parameters.AddWithValue("@UpdateTime", DateTime.Now);
 
                         ajaxResult.Data = String.Format("受影響行數: {0}", cmd.ExecuteNonQuery());
                         ajaxResult.Result = "true";
@@ -418,6 +639,9 @@ VALUES
             return Json(ajaxResult);
         }
 
+        /// <summary>
+        /// 刪除節目內容
+        /// </summary>
         [HttpPost]
         public JsonResult DeleteProgramme_LIST(PROGRAMME_LIST data)
         {
@@ -460,7 +684,6 @@ WHERE P_NO = @P_NO AND F_NO = @F_NO
 
             return Json(ajaxResult);
         }
-
 
         /// <summary>
         /// 檔案內容
@@ -590,8 +813,9 @@ VALUES
             return Json(ajaxResult);
         }
 
-
-
+        /// <summary>
+        /// 轉16進位制
+        /// </summary>
         private string ToHexadecimal(int i, int size)
         {
             List<char> sb = new List<char>();
@@ -629,6 +853,9 @@ VALUES
             return string.Join("", sb);
         }
 
+        /// <summary>
+        /// 轉10進位制
+        /// </summary>
         private int ToInt(string hex)
         {
             List<char> sb = new List<char>(hex);

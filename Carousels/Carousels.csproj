@@ -145,6 +145,8 @@
     <Compile Include="App_Code\Core.cs" />
     <Compile Include="App_Code\Loger.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
+    <Content Include="App_Data\Carousels.db" />
+    <None Include="Controllers\ApiController - 複製.cs" />
     <Compile Include="Controllers\ApiController.cs" />
     <Compile Include="Controllers\WatchController.cs" />
     <Compile Include="Global.asax.cs">
@@ -153,6 +155,7 @@
     <Compile Include="Models\AJAXResponse.cs" />
     <Compile Include="Models\ArchiveInfo.cs" />
     <Compile Include="Models\PLAYER_LIST.cs" />
+    <Compile Include="Models\PROGRAMME.cs" />
     <Compile Include="Models\PROGRAMME_LIST.cs" />
     <Compile Include="Models\PROGRAMME_DATA.cs" />
     <Compile Include="Models\VersionInfo.cs" />
@@ -160,7 +163,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\web.config" />
-    <Content Include="App_Data\Database.xls" />
     <Content Include="Assets\lib\pdfjs-3.7.107\pdf.js.map" />
     <Content Include="Assets\lib\pdfjs-3.7.107\pdf.sandbox.js.map" />
     <Content Include="Assets\lib\pdfjs-3.7.107\pdf.worker.js.map" />
@@ -193,6 +195,7 @@
     <Content Include="Views\Shared\_Layout.cshtml" />
     <Content Include="Views\Watch\Index.cshtml" />
     <Content Include="Views\Watch\Setting.cshtml" />
+    <Content Include="Views\Watch\Setting - 複製.cshtml" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>

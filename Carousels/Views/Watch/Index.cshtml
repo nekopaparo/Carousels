@@ -323,7 +323,7 @@
         // 網頁播放
         function ifPlay(url, second) {
             ifPlayer.src = url;
-            preNext(second * 1000);
+            preNext(second);
         }
 
         // #region  PDF播放
@@ -424,7 +424,7 @@
         // #region 輪播器更新
         // 指定時間後更新
         function preRefresh(sec) {
-            rt_countdown = sec ? sec : 3600; // 預設1小時
+            rt_countdown = sec ? sec : 1200; // 預設20分鐘
         }
         // 更新
         function refresh() {

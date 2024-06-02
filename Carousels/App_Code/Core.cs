@@ -37,7 +37,9 @@ FROM PLAYER_LIST A
 LEFT JOIN PROGRAMME B ON A.P_NO = B.P_NO
 LEFT JOIN PROGRAMME_LIST C ON B.P_NO = C.P_NO
 LEFT JOIN PROGRAMME_DATA D ON C.F_NO = D.F_NO
-WHERE A.C_NO = @C_NO AND C.STAT IS NULL AND D.STAT IS NULL
+WHERE A.C_NO = @C_NO 
+AND A.STAT IS NULL AND B.STAT IS NULL
+AND C.STAT IS NULL AND D.STAT IS NULL
 ORDER BY A.ITEM, C.ITEM
                     "))
                     {
@@ -173,26 +175,42 @@ WHERE C_NO = 'C00000000'
                 using (CarouselDbConnection db = new CarouselDbConnection())
                 {
                     using (SQLiteCommand cmd = db.GetCommand(@"
+SELECT MAX(UpdateTime) [UpdateTime]
+FROM (
+	SELECT MAX(A.UpdateTime) [UpdateTime]
+	FROM PLAYER_LIST A
+	WHERE A.C_NO = @C_NO
+	UNION
+	SELECT MAX(B.UpdateTime) [UpdateTime]
+	FROM PLAYER_LIST A
+	LEFT JOIN PROGRAMME B ON A.P_NO = B.P_NO
+	WHERE A.C_NO = @C_NO
+	UNION
+	SELECT MAX(B.UpdateTime) [UpdateTime]
+	FROM PLAYER_LIST A
+	LEFT JOIN PROGRAMME_LIST B ON A.P_NO = B.P_NO
+	WHERE A.C_NO = @C_NO
+	UNION
+	SELECT MAX(C.UpdateTime) [UpdateTime]
+	FROM PLAYER_LIST A
+	LEFT JOIN PROGRAMME_LIST B ON A.P_NO = B.P_NO
+	LEFT JOIN PROGRAMME_DATA C ON B.F_NO = C.F_NO
+	WHERE A.C_NO = @C_NO
+)
+            "))
+                    {
+                        // 取得節目版本最新時間
+                        cmd.Parameters.AddWithValue("@C_NO", C_NO);
+                        result = cmd.ExecuteScalar();
+
+                        // 更新使用端連線時間
+                        cmd.CommandText = @"
 UPDATE PLAYER
 SET Client = @LINK_TIME
 WHERE C_NO = @C_NO
-            "))
-                    {
-                        cmd.Parameters.AddWithValue("@C_NO", C_NO);
-                        cmd.Parameters.AddWithValue("@LINK_TIME", DateTime.Now);
-
-                        // 更新使用端連線時間
-                        cmd.ExecuteNonQuery();
-
-                        // 取得節目版本最新時間
-                        cmd.CommandText = @"
-SELECT MAX(C.UpdateTime) UpdateTime
-FROM PLAYER_LIST A
-LEFT JOIN PROGRAMME_LIST B ON A.P_NO = B.P_NO
-LEFT JOIN PROGRAMME_DATA C ON B.F_NO = C.F_NO
-WHERE A.C_NO = @C_NO
                         ";
-                        result = cmd.ExecuteScalar();
+                        cmd.Parameters.AddWithValue("@LINK_TIME", DateTime.Now);
+                        cmd.ExecuteNonQuery();
                     }
                 }
             }
